@@ -28,6 +28,7 @@
                 <input type="text" id="searchInput" placeholder="搜索标题...">
                 <button type="button" id="filterBtn">筛选</button>
                 <button type="button" id="resetBtn" class="btn">重置</button>
+                <button type="button" id="refreshBtn" class="btn" title="强制刷新">🔄 刷新</button>
             </form>
         </div>
         
@@ -58,18 +59,81 @@
         let allArticles = [];
         let filteredArticles = [];
         
-        async function loadArticles() {
+        // 缓存键
+        const CACHE_KEY = 'gitmd_articles_cache';
+        const CACHE_TIME_KEY = 'gitmd_articles_cache_time';
+        const CACHE_DURATION = 10 * 60 * 1000; // 10分钟缓存
+        
+        // 加载模式
+        let loadMode = 'fast'; // 'fast' 或 'full'
+        
+        async function loadArticles(forceRefresh = false) {
             try {
+                // 检查缓存
+                const now = Date.now();
+                const cacheTime = parseInt(localStorage.getItem(CACHE_TIME_KEY) || '0');
+                const cachedData = localStorage.getItem(CACHE_KEY);
+                
+                if (!forceRefresh && cachedData && (now - cacheTime) < CACHE_DURATION) {
+                    // 使用缓存数据
+                    console.log('使用缓存数据');
+                    allArticles = JSON.parse(cachedData);
+                    filteredArticles = [...allArticles];
+                    updateArticleCount();
+                    renderArticles();
+                    
+                    // 后台静默更新（如果缓存快过期）
+                    if ((now - cacheTime) > CACHE_DURATION * 0.8) {
+                        console.log('后台更新缓存');
+                        loadArticlesBackground();
+                    }
+                    return;
+                }
+                
                 document.getElementById('articleList').innerHTML = '<div class="loading">加载中...</div>';
                 
-                allArticles = await api.getArticles();
+                // 使用快速模式加载（只获取文件列表）
+                allArticles = await api.getArticles({ 
+                    skipContent: loadMode === 'fast',
+                    useCache: true,
+                    cacheKey: GitMDConfig.contentPath
+                });
                 filteredArticles = [...allArticles];
+                
+                // 保存到缓存
+                localStorage.setItem(CACHE_KEY, JSON.stringify(allArticles));
+                localStorage.setItem(CACHE_TIME_KEY, String(now));
                 
                 updateArticleCount();
                 renderArticles();
             } catch (error) {
                 document.getElementById('articleList').innerHTML = 
                     `<div class="error-message">加载失败: ${error.message}</div>`;
+            }
+        }
+        
+        // 后台静默更新
+        async function loadArticlesBackground() {
+            try {
+                const articles = await api.getArticles({ 
+                    skipContent: false,
+                    useCache: false
+                });
+                
+                // 更新缓存
+                localStorage.setItem(CACHE_KEY, JSON.stringify(articles));
+                localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
+                
+                // 如果数据有变化，更新显示
+                if (JSON.stringify(articles) !== JSON.stringify(allArticles)) {
+                    allArticles = articles;
+                    filteredArticles = [...allArticles];
+                    updateArticleCount();
+                    renderArticles();
+                    console.log('后台更新完成，数据已刷新');
+                }
+            } catch (error) {
+                console.warn('后台更新失败:', error);
             }
         }
         
@@ -142,8 +206,12 @@
                     sha
                 );
                 
+                // 清除缓存
+                localStorage.removeItem(CACHE_KEY);
+                localStorage.removeItem(CACHE_TIME_KEY);
+                
                 showMessage('删除成功', 'success');
-                loadArticles();
+                loadArticles(true);
             } catch (error) {
                 showMessage('删除失败: ' + error.message, 'error');
             }
@@ -170,8 +238,12 @@
                     }
                 }
                 
+                // 清除缓存
+                localStorage.removeItem(CACHE_KEY);
+                localStorage.removeItem(CACHE_TIME_KEY);
+                
                 showMessage('批量删除成功', 'success');
-                loadArticles();
+                loadArticles(true);
             } catch (error) {
                 showMessage('批量删除失败: ' + error.message, 'error');
             }
@@ -203,6 +275,15 @@
             filteredArticles = [...allArticles];
             updateArticleCount();
             renderArticles();
+        });
+        
+        // 强制刷新按钮
+        document.getElementById('refreshBtn').addEventListener('click', function() {
+            // 清除缓存
+            localStorage.removeItem(CACHE_KEY);
+            localStorage.removeItem(CACHE_TIME_KEY);
+            // 强制重新加载
+            loadArticles(true);
         });
         
         // 加载文章

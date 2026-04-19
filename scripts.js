@@ -12,9 +12,49 @@ document.addEventListener('DOMContentLoaded', async function() {
     const api = new GitHubAPI(GitMDConfig);
     window.gitMDApi = api;
     
+    // 检查是否是编辑模式
+    const urlParams = new URLSearchParams(window.location.search);
+    const editFile = urlParams.get('file');
+    let editSha = null;
+    
+    if (editFile) {
+        // 编辑模式：加载文章内容
+        try {
+            showMessage('加载文章中...', 'info');
+            const fileData = await api.getFile(`${GitMDConfig.contentPath}/${editFile}`);
+            
+            if (fileData) {
+                const article = api.parseArticle(fileData.content, editFile);
+                editSha = fileData.sha;
+                
+                // 填充表单
+                document.getElementById('title').value = article.title;
+                document.getElementById('content').value = article.content;
+                document.getElementById('author').value = article.author || GitMDConfig.defaultAuthor;
+                document.getElementById('date').value = article.date;
+                document.getElementById('comments').checked = article.comments !== false;
+                document.getElementById('showThumbnail').checked = article.showThumbnail !== false;
+                
+                // 更新页面标题
+                document.title = `编辑: ${article.title} - GitMD`;
+                document.querySelector('h2').innerHTML = `编辑文章 <small>${editFile}</small>`;
+                
+                // 触发内容更新
+                if (contentTextarea) {
+                    contentTextarea.dispatchEvent(new Event('input'));
+                }
+                
+                showMessage('文章加载成功', 'success');
+            }
+        } catch (error) {
+            showMessage('加载文章失败: ' + error.message, 'error');
+            console.error('加载文章失败:', error);
+        }
+    }
+    
     // 初始化日期
     const dateInput = document.getElementById('date');
-    if (dateInput) {
+    if (dateInput && !editFile) {
         const now = new Date();
         const offset = now.getTimezoneOffset();
         const localDate = new Date(now.getTime() - offset * 60 * 1000);
@@ -176,22 +216,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             this.disabled = true;
             this.textContent = '保存中...';
             
-            // 生成文件名
-            const filename = GitMDConfig.fileNameFormat(title, article.date);
+            // 生成文件名（编辑模式使用原文件名）
+            const filename = editFile || GitMDConfig.fileNameFormat(title, article.date);
             const filepath = `${GitMDConfig.contentPath}/${filename}`;
             
             // 生成文章内容
             const articleContent = api.generateArticleContent(article);
             
-            // 检查文件是否存在
-            const existingFile = await api.getFile(filepath);
-            
             // 保存文件
             await api.saveFile(
                 filepath,
                 articleContent,
-                existingFile ? `更新文章: ${title}` : `创建文章: ${title}`,
-                existingFile?.sha
+                editFile ? `更新文章: ${title}` : `创建文章: ${title}`,
+                editSha // 编辑模式使用已加载的sha
             );
             
             showMessage('文章保存成功！', 'success');

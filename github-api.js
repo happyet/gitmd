@@ -55,7 +55,7 @@ class GitHubAPI {
             const data = await this.request(`/repos/${this.owner}/${this.repo}/contents/${path}`);
             if (data.content) {
                 return {
-                    content: atob(data.content),
+                    content: decodeURIComponent(escape(atob(data.content))),
                     sha: data.sha
                 };
             }
@@ -110,23 +110,52 @@ class GitHubAPI {
         }
     }
     
-    // 获取所有文章列表
-    async getArticles() {
+    // 获取所有文章列表（优化版）
+    async getArticles(options = {}) {
+        const { 
+            skipContent = false,  // 是否跳过内容获取
+            useCache = true,      // 是否使用缓存
+            cacheKey = null       // 自定义缓存键
+        } = options;
+        
         const contentPath = this.getContentPath();
+        
+        // 检查ETag缓存
+        if (useCache && cacheKey) {
+            const cached = await this.checkETagCache(cacheKey);
+            if (cached) {
+                console.log('使用ETag缓存');
+                return cached;
+            }
+        }
+        
+        // 获取文件列表
         const files = await this.getDirectory(contentPath);
         const articles = [];
         
         for (const file of files) {
             if (file.name.endsWith('.md')) {
                 try {
-                    const fileData = await this.getFile(`${contentPath}/${file.name}`);
-                    if (fileData) {
-                        const article = this.parseArticle(fileData.content, file.name);
+                    if (skipContent) {
+                        // 快速模式：只获取基本信息
                         articles.push({
-                            ...article,
                             filename: file.name,
-                            sha: fileData.sha
+                            sha: file.sha,
+                            title: file.name.replace('.md', ''),
+                            date: file.name.match(/^\d{4}-\d{2}-\d{2}/)?.[0] || new Date().toISOString(),
+                            size: file.size
                         });
+                    } else {
+                        // 完整模式：获取文章内容
+                        const fileData = await this.getFile(`${contentPath}/${file.name}`);
+                        if (fileData) {
+                            const article = this.parseArticle(fileData.content, file.name);
+                            articles.push({
+                                ...article,
+                                filename: file.name,
+                                sha: fileData.sha
+                            });
+                        }
                     }
                 } catch (error) {
                     console.error(`解析文章失败: ${file.name}`, error);
@@ -135,7 +164,46 @@ class GitHubAPI {
         }
         
         // 按日期排序
-        return articles.sort((a, b) => new Date(b.date) - new Date(a.date));
+        const sorted = articles.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        // 保存ETag缓存
+        if (useCache && cacheKey) {
+            await this.saveETagCache(cacheKey, sorted);
+        }
+        
+        return sorted;
+    }
+    
+    // ETag缓存检查
+    async checkETagCache(key) {
+        try {
+            const cacheData = localStorage.getItem(`etag_${key}`);
+            if (!cacheData) return null;
+            
+            const { data, timestamp, etag } = JSON.parse(cacheData);
+            
+            // 检查缓存是否过期（10分钟）
+            if (Date.now() - timestamp > 10 * 60 * 1000) {
+                return null;
+            }
+            
+            return data;
+        } catch {
+            return null;
+        }
+    }
+    
+    // 保存ETag缓存
+    async saveETagCache(key, data) {
+        try {
+            localStorage.setItem(`etag_${key}`, JSON.stringify({
+                data,
+                timestamp: Date.now(),
+                etag: Date.now().toString()
+            }));
+        } catch (error) {
+            console.warn('缓存保存失败:', error);
+        }
     }
     
     // 解析文章内容
