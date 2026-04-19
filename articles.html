@@ -59,9 +59,9 @@
         let allArticles = [];
         let filteredArticles = [];
         
-        // 缓存键
-        const CACHE_KEY = 'gitmd_articles_cache';
-        const CACHE_TIME_KEY = 'gitmd_articles_cache_time';
+        // 缓存键（包含当前目录，不同目录缓存独立共存）
+        const getCacheKey = () => `gitmd_articles_cache_${GitMDConfig.github.currentPath}`;
+        const getCacheTimeKey = () => `gitmd_articles_cache_time_${GitMDConfig.github.currentPath}`;
         const CACHE_DURATION = 10 * 60 * 1000; // 10分钟缓存
         
         // 加载模式
@@ -69,6 +69,10 @@
         
         async function loadArticles(forceRefresh = false) {
             try {
+                // 获取当前目录的缓存键
+                const CACHE_KEY = getCacheKey();
+                const CACHE_TIME_KEY = getCacheTimeKey();
+                
                 // 检查缓存
                 const now = Date.now();
                 const cacheTime = parseInt(localStorage.getItem(CACHE_TIME_KEY) || '0');
@@ -207,8 +211,8 @@
                 );
                 
                 // 清除缓存
-                localStorage.removeItem(CACHE_KEY);
-                localStorage.removeItem(CACHE_TIME_KEY);
+                localStorage.removeItem(getCacheKey());
+                localStorage.removeItem(getCacheTimeKey());
                 
                 showMessage('删除成功', 'success');
                 loadArticles(true);
@@ -239,8 +243,8 @@
                 }
                 
                 // 清除缓存
-                localStorage.removeItem(CACHE_KEY);
-                localStorage.removeItem(CACHE_TIME_KEY);
+                localStorage.removeItem(getCacheKey());
+                localStorage.removeItem(getCacheTimeKey());
                 
                 showMessage('批量删除成功', 'success');
                 loadArticles(true);

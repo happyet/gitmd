@@ -12,6 +12,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     const api = new GitHubAPI(GitMDConfig);
     window.gitMDApi = api;
     
+    // 预览面板控制
+    const previewPanel = document.getElementById('previewPanel');
+    const togglePreviewBtn = document.getElementById('togglePreview');
+    const closePreviewBtn = document.getElementById('closePreview');
+    const editorContainer = document.querySelector('.editor-container');
+    const contentTextarea = document.getElementById('content');
+    const livePreview = document.getElementById('livePreview');
+    
     // 检查是否是编辑模式
     const urlParams = new URLSearchParams(window.location.search);
     const editFile = urlParams.get('file');
@@ -31,7 +39,16 @@ document.addEventListener('DOMContentLoaded', async function() {
                 document.getElementById('title').value = article.title;
                 document.getElementById('content').value = article.content;
                 document.getElementById('author').value = article.author || GitMDConfig.defaultAuthor;
-                document.getElementById('date').value = article.date;
+                
+                // 格式化日期为 datetime-local 格式
+                const dateInput = document.getElementById('date');
+                if (dateInput && article.date) {
+                    const date = new Date(article.date);
+                    const offset = date.getTimezoneOffset();
+                    const localDate = new Date(date.getTime() - offset * 60 * 1000);
+                    dateInput.value = localDate.toISOString().slice(0, 16);
+                }
+                
                 document.getElementById('comments').checked = article.comments !== false;
                 document.getElementById('showThumbnail').checked = article.showThumbnail !== false;
                 
@@ -60,14 +77,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         const localDate = new Date(now.getTime() - offset * 60 * 1000);
         dateInput.value = localDate.toISOString().slice(0, 16);
     }
-    
-    // 预览面板控制
-    const previewPanel = document.getElementById('previewPanel');
-    const togglePreviewBtn = document.getElementById('togglePreview');
-    const closePreviewBtn = document.getElementById('closePreview');
-    const editorContainer = document.querySelector('.editor-container');
-    const contentTextarea = document.getElementById('content');
-    const livePreview = document.getElementById('livePreview');
     
     let previewVisible = false;
     
@@ -308,7 +317,7 @@ function initPathSelector() {
             updatePathBadge();
             showMessage(`已切换到 ${newPath} 目录`, 'success');
             
-            // 重新加载数据
+            // 重新加载数据（不清除缓存，让不同目录缓存共存）
             location.reload();
         }
     });
