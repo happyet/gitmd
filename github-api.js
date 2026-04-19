@@ -230,23 +230,3 @@ class GitHubAPI {
 
 // 导出
 window.GitHubAPI = GitHubAPI;
-    // 确保目录存在（通过创建.gitkeep文件）
-    async ensureDirectory(path) {
-        try {
-            const files = await this.getDirectory(path);
-            if (files.length === 0) {
-                // 创建.gitkeep文件以确保目录存在
-                await this.saveFile(
-                    `${path}/.gitkeep`,
-                    '',
-                    `创建目录: ${path}`
-                );
-                console.log(`已创建目录: ${path}`);
-            }
-            return true;
-        } catch (error) {
-            console.error(`创建目录失败: ${path}`, error);
-            return false;
-        }
-    }
-}
