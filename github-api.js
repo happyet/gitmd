@@ -3,8 +3,8 @@ class GitHubAPI {
     constructor(config) {
         this.owner = config.github.owner;
         this.repo = config.github.repo;
-        this.contentPath = config.github.contentPath;
-        this.dataPath = config.github.dataPath;
+        // 使用 getter 获取当前内容路径
+        this.getContentPath = () => config.contentPath;
         this.apiBase = config.apiBase;
         this.useProxy = config.api.useProxy;
         this.token = config.githubToken; // 仅在不使用代理时需要
@@ -61,8 +61,9 @@ class GitHubAPI {
             }
             return null;
         } catch (error) {
-            if (error.message.includes('404')) {
-                return null; // 文件不存在
+            // 文件不存在时返回null
+            if (error.message.includes('Not Found') || error.message.includes('404')) {
+                return null;
             }
             throw error;
         }
@@ -101,7 +102,8 @@ class GitHubAPI {
         try {
             return await this.request(`/repos/${this.owner}/${this.repo}/contents/${path}`);
         } catch (error) {
-            if (error.message.includes('404')) {
+            // 目录不存在时返回空数组
+            if (error.message.includes('Not Found') || error.message.includes('404')) {
                 return [];
             }
             throw error;
@@ -110,13 +112,14 @@ class GitHubAPI {
     
     // 获取所有文章列表
     async getArticles() {
-        const files = await this.getDirectory(this.contentPath);
+        const contentPath = this.getContentPath();
+        const files = await this.getDirectory(contentPath);
         const articles = [];
         
         for (const file of files) {
             if (file.name.endsWith('.md')) {
                 try {
-                    const fileData = await this.getFile(`${this.contentPath}/${file.name}`);
+                    const fileData = await this.getFile(`${contentPath}/${file.name}`);
                     if (fileData) {
                         const article = this.parseArticle(fileData.content, file.name);
                         articles.push({
@@ -223,57 +226,27 @@ class GitHubAPI {
         
         return `${frontMatter}\n\n${article.content}`;
     }
-    
-    // 加载分类
-    async loadCategories() {
-        try {
-            const fileData = await this.getFile(`${this.dataPath}/categories.json`);
-            if (fileData) {
-                return JSON.parse(fileData.content);
-            }
-        } catch (error) {
-            console.error('加载分类失败', error);
-        }
-        return {};
-    }
-    
-    // 保存分类
-    async saveCategories(categories) {
-        const content = JSON.stringify(categories, null, 2);
-        const existingFile = await this.getFile(`${this.dataPath}/categories.json`);
-        return await this.saveFile(
-            `${this.dataPath}/categories.json`,
-            content,
-            '更新分类配置',
-            existingFile?.sha
-        );
-    }
-    
-    // 加载标签
-    async loadTags() {
-        try {
-            const fileData = await this.getFile(`${this.dataPath}/tags.json`);
-            if (fileData) {
-                return JSON.parse(fileData.content);
-            }
-        } catch (error) {
-            console.error('加载标签失败', error);
-        }
-        return [];
-    }
-    
-    // 保存标签
-    async saveTags(tags) {
-        const content = JSON.stringify(tags, null, 2);
-        const existingFile = await this.getFile(`${this.dataPath}/tags.json`);
-        return await this.saveFile(
-            `${this.dataPath}/tags.json`,
-            content,
-            '更新标签配置',
-            existingFile?.sha
-        );
-    }
 }
 
 // 导出
 window.GitHubAPI = GitHubAPI;
+    // 确保目录存在（通过创建.gitkeep文件）
+    async ensureDirectory(path) {
+        try {
+            const files = await this.getDirectory(path);
+            if (files.length === 0) {
+                // 创建.gitkeep文件以确保目录存在
+                await this.saveFile(
+                    `${path}/.gitkeep`,
+                    '',
+                    `创建目录: ${path}`
+                );
+                console.log(`已创建目录: ${path}`);
+            }
+            return true;
+        } catch (error) {
+            console.error(`创建目录失败: ${path}`, error);
+            return false;
+        }
+    }
+}

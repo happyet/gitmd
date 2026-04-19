@@ -21,21 +21,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         dateInput.value = localDate.toISOString().slice(0, 16);
     }
     
-    // 加载分类和标签
-    try {
-        const categories = await api.loadCategories();
-        const tags = await api.loadTags();
-        
-        // 渲染分类列表
-        renderCategories(categories);
-        
-        // 保存标签数据
-        window.allTags = tags;
-    } catch (error) {
-        console.error('加载数据失败', error);
-        showMessage('加载数据失败: ' + error.message, 'error');
-    }
-    
     // 预览面板控制
     const previewPanel = document.getElementById('previewPanel');
     const togglePreviewBtn = document.getElementById('togglePreview');
@@ -168,50 +153,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         document.getElementById('url').value = `/${slug}/`;
     });
     
-    // 标签输入功能
-    const tagInput = document.getElementById('tagInput');
-    const selectedTags = document.getElementById('selectedTags');
-    
-    if (tagInput) {
-        tagInput.addEventListener('input', function() {
-            const value = this.value.trim().toLowerCase();
-            
-            if (value.includes(',')) {
-                const tagsToAdd = value.split(',').map(t => t.trim()).filter(t => t !== '');
-                tagsToAdd.forEach(t => addTag(t));
-                this.value = '';
-                return;
-            }
-        });
-        
-        tagInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' || e.key === ',') {
-                e.preventDefault();
-                const value = this.value.trim();
-                if (value !== '') {
-                    addTag(value);
-                    this.value = '';
-                }
-            }
-        });
-        
-        function addTag(tag) {
-            tag = tag.replace(/,/g, '').trim();
-            if (tag === '' || !selectedTags) return;
-            
-            const existingTags = Array.from(selectedTags.querySelectorAll('input[type="hidden"]'))
-                .map(el => el.value);
-            if (existingTags.includes(tag)) return;
-            
-            const span = document.createElement('span');
-            span.className = 'tag';
-            span.innerHTML = `${tag}<input type="hidden" name="tags[]" value="${tag}"><span class="remove-tag">&times;</span>`;
-            selectedTags.appendChild(span);
-            
-            span.querySelector('.remove-tag').addEventListener('click', () => span.remove());
-        }
-    }
-    
     // 保存文章
     document.getElementById('saveBtn')?.addEventListener('click', async function() {
         const title = document.getElementById('title').value.trim();
@@ -227,10 +168,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             content: content,
             author: document.getElementById('author').value || GitMDConfig.defaultAuthor,
             date: document.getElementById('date').value,
-            categories: Array.from(document.querySelectorAll('.category-checkbox:checked'))
-                .map(cb => cb.dataset.name),
-            tags: Array.from(selectedTags.querySelectorAll('input[type="hidden"]'))
-                .map(el => el.value),
             comments: document.getElementById('comments').checked,
             showThumbnail: document.getElementById('showThumbnail').checked
         };
@@ -241,7 +178,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // 生成文件名
             const filename = GitMDConfig.fileNameFormat(title, article.date);
-            const filepath = `${GitMDConfig.github.contentPath}/${filename}`;
+            const filepath = `${GitMDConfig.contentPath}/${filename}`;
             
             // 生成文章内容
             const articleContent = api.generateArticleContent(article);
@@ -294,23 +231,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 });
-
-// 渲染分类列表
-function renderCategories(categories) {
-    const categoryList = document.getElementById('categoryList');
-    if (!categoryList) return;
-    
-    categoryList.innerHTML = '';
-    
-    for (const [slug, category] of Object.entries(categories)) {
-        const label = document.createElement('label');
-        label.innerHTML = `
-            <input type="checkbox" class="category-checkbox" value="${slug}" data-name="${category.name}">
-            ${category.name}
-        `;
-        categoryList.appendChild(label);
-    }
-}
 
 // 显示消息
 function showMessage(text, type = 'info') {

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配置 - GitMD</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="main-nav">
+            <div class="nav-links">
+                <a href="index.html">写文章</a>
+                <a href="articles.html">文章管理</a>
+                <a href="config.html" class="active">配置</a>
+            </div>
+            <div class="nav-actions">
+                <span class="theme-toggle" id="themeToggle" title="切换主题">🌓</span>
+            </div>
+        </nav>
+        
+        <h2>系统配置</h2>
+        
+        <div class="config-sections">
+            <!-- GitHub配置 -->
+            <div class="config-section">
+                <h3>GitHub 配置</h3>
+                <div class="config-info">
+                    <div class="info-item">
+                        <label>用户名</label>
+                        <span id="configOwner">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>仓库名</label>
+                        <span id="configRepo">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>内容路径</label>
+                        <span id="configPath">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>数据路径</label>
+                        <span id="configDataPath">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- API配置 -->
+            <div class="config-section">
+                <h3>API 配置</h3>
+                <div class="config-info">
+                    <div class="info-item">
+                        <label>代理模式</label>
+                        <span id="configProxyMode">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>代理URL</label>
+                        <span id="configProxyUrl">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>API基础URL</label>
+                        <span id="configApiBase">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 连接测试 -->
+            <div class="config-section">
+                <h3>连接测试</h3>
+                <div class="test-actions">
+                    <button id="testWorkerBtn" class="btn">测试Worker连接</button>
+                    <button id="testApiBtn" class="btn">测试GitHub API</button>
+                    <button id="testRepoBtn" class="btn">测试仓库访问</button>
+                </div>
+                <div id="testResult" class="test-result"></div>
+            </div>
+            
+            <!-- 使用说明 -->
+            <div class="config-section">
+                <h3>使用说明</h3>
+                <div class="help-content">
+                    <h4>如何修改配置？</h4>
+                    <p>编辑项目中的 <code>config.js</code> 文件，修改以下配置项：</p>
+                    
+                    <h4>GitHub配置</h4>
+                    <pre><code>github: {
+    owner: '你的用户名',
+    repo: '仓库名',
+    contentPaths: {
+        'post': 'content/post',
+        'page': 'content/page'
+    },
+    dataPath: 'data'
+}</code></pre>
+                    
+                    <h4>API代理配置</h4>
+                    <pre><code>api: {
+    proxyUrl: 'https://gitmd-api.xxx.workers.dev',
+    useProxy: true
+}</code></pre>
+                    
+                    <h4>获取GitHub Token</h4>
+                    <ol>
+                        <li>访问 <a href="https://github.com/settings/tokens" target="_blank">GitHub Token设置</a></li>
+                        <li>点击 "Generate new token (classic)"</li>
+                        <li>勾选 <strong>repo</strong> 权限</li>
+                        <li>生成并复制Token</li>
+                        <li>在Cloudflare Worker环境变量中设置 <code>GITHUB_TOKEN</code></li>
+                    </ol>
+                    
+                    <h4>部署Cloudflare Worker</h4>
+                    <ol>
+                        <li>访问 <a href="https://dash.cloudflare.com" target="_blank">Cloudflare Dashboard</a></li>
+                        <li>Workers & Pages → Create Worker</li>
+                        <li>复制 <code>worker/worker.js</code> 代码</li>
+                        <li>设置环境变量 <code>GITHUB_TOKEN</code></li>
+                        <li>获取Worker URL并填入config.js</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="config.js"></script>
+    <script src="github-api.js"></script>
+    <script src="scripts.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+        // 显示配置信息
+        document.getElementById('configOwner').textContent = GitMDConfig.github.owner;
+        document.getElementById('configRepo').textContent = GitMDConfig.github.repo;
+        document.getElementById('configPath').textContent = GitMDConfig.contentPath;
+        document.getElementById('configDataPath').textContent = GitMDConfig.github.dataPath;
+        
+        document.getElementById('configProxyMode').textContent = 
+            GitMDConfig.api.useProxy ? '已启用' : '未启用';
+        document.getElementById('configProxyUrl').textContent = 
+            GitMDConfig.api.proxyUrl || '未配置';
+        document.getElementById('configApiBase').textContent = GitMDConfig.apiBase;
+        
+        const api = new GitHubAPI(GitMDConfig);
+        
+        // 测试Worker连接
+        document.getElementById('testWorkerBtn').addEventListener('click', async function() {
+            const result = document.getElementById('testResult');
+            result.innerHTML = '<div class="loading">测试中...</div>';
+            
+            try {
+                const response = await fetch(GitMDConfig.api.proxyUrl + '/health');
+                const data = await response.json();
+                
+                result.innerHTML = `
+                    <div class="test-success">
+                        <strong>✅ Worker连接成功</strong>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="test-error">
+                        <strong>❌ Worker连接失败</strong>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+        
+        // 测试GitHub API
+        document.getElementById('testApiBtn').addEventListener('click', async function() {
+            const result = document.getElementById('testResult');
+            result.innerHTML = '<div class="loading">测试中...</div>';
+            
+            try {
+                // 测试获取用户信息
+                const user = await api.request('/user');
+                
+                result.innerHTML = `
+                    <div class="test-success">
+                        <strong>✅ GitHub API连接成功</strong>
+                        <p>用户: ${user.login}</p>
+                        <p>名称: ${user.name || '-'}</p>
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="test-error">
+                        <strong>❌ GitHub API连接失败</strong>
+                        <p>${error.message}</p>
+                        <p class="hint">请检查Token是否正确设置</p>
+                    </div>
+                `;
+            }
+        });
+        
+        // 测试仓库访问
+        document.getElementById('testRepoBtn').addEventListener('click', async function() {
+            const result = document.getElementById('testResult');
+            result.innerHTML = '<div class="loading">测试中...</div>';
+            
+            try {
+                // 测试获取仓库信息
+                const repo = await api.request(`/repos/${GitMDConfig.github.owner}/${GitMDConfig.github.repo}`);
+                
+                // 测试获取内容目录
+                let contentTest = '';
+                try {
+                    const contents = await api.getDirectory(GitMDConfig.contentPath);
+                    contentTest = `<p>内容目录: ${contents.length} 个文件</p>`;
+                } catch (e) {
+                    contentTest = `<p class="warning">⚠️ 内容目录不存在或为空</p>`;
+                }
+                
+                result.innerHTML = `
+                    <div class="test-success">
+                        <strong>✅ 仓库访问成功</strong>
+                        <p>仓库名: ${repo.full_name}</p>
+                        <p>私有: ${repo.private ? '是' : '否'}</p>
+                        ${contentTest}
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="test-error">
+                        <strong>❌ 仓库访问失败</strong>
+                        <p>${error.message}</p>
+                        <p class="hint">请检查用户名和仓库名是否正确</p>
+                    </div>
+                `;
+            }
+        });
+    });
+    </script>
+</body>
+</html>

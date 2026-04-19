@@ -13,9 +13,7 @@ const CONFIG = {
             'page': 'content/page'       // 页面
         },
         // 当前使用的目录（默认）
-        currentPath: 'post',
-        // 数据文件路径（分类、标签等）
-        dataPath: 'data'
+        currentPath: 'post'
     },
     
     // 获取当前内容路径

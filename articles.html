@@ -9,12 +9,15 @@
 <body>
     <div class="container">
         <nav class="main-nav">
-            <a href="index.html">写文章</a>
-            <a href="articles.html" class="active">文章管理</a>
-            <a href="manage.html">分类标签</a>
-            <a href="config.html">配置</a>
-            <select id="pathSelector" class="path-selector" title="切换目录"></select>
-            <span class="theme-toggle" id="themeToggle" title="切换主题">🌓</span>
+            <div class="nav-links">
+                <a href="index.html">写文章</a>
+                <a href="articles.html" class="active">文章管理</a>
+                <a href="config.html">配置</a>
+            </div>
+            <div class="nav-actions">
+                <select id="pathSelector" class="path-selector" title="切换目录"></select>
+                <span class="theme-toggle" id="themeToggle" title="切换主题">🌓</span>
+            </div>
         </nav>
         
         <h2>文章管理 <small id="articleCount"></small></h2>
@@ -23,12 +26,6 @@
         <div class="filter-bar">
             <form class="filter-form">
                 <input type="text" id="searchInput" placeholder="搜索标题...">
-                <select id="categoryFilter">
-                    <option value="">全部分类</option>
-                </select>
-                <select id="tagFilter">
-                    <option value="">全部标签</option>
-                </select>
                 <button type="button" id="filterBtn">筛选</button>
                 <button type="button" id="resetBtn" class="btn">重置</button>
             </form>
@@ -70,7 +67,6 @@
                 
                 updateArticleCount();
                 renderArticles();
-                loadFilters();
             } catch (error) {
                 document.getElementById('articleList').innerHTML = 
                     `<div class="error-message">加载失败: ${error.message}</div>`;
@@ -106,8 +102,6 @@
                             </h3>
                             <div class="article-meta">
                                 <span class="date">${formatDate(article.date)}</span>
-                                ${article.categories.map(c => `<span class="category">${escapeHtml(c)}</span>`).join('')}
-                                ${article.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}
                             </div>
                         </div>
                         <div class="article-actions">
@@ -124,34 +118,12 @@
             });
         }
         
-        // 加载筛选器
-        async function loadFilters() {
-            const categories = await api.loadCategories();
-            const tags = await api.loadTags();
-            
-            // 分类筛选器
-            const categoryFilter = document.getElementById('categoryFilter');
-            categoryFilter.innerHTML = '<option value="">全部分类</option>' +
-                Object.values(categories).map(c => 
-                    `<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`
-                ).join('');
-            
-            // 标签筛选器
-            const tagFilter = document.getElementById('tagFilter');
-            tagFilter.innerHTML = '<option value="">全部标签</option>' +
-                tags.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
-        }
-        
         // 筛选文章
         function filterArticles() {
             const search = document.getElementById('searchInput').value.toLowerCase();
-            const category = document.getElementById('categoryFilter').value;
-            const tag = document.getElementById('tagFilter').value;
             
             filteredArticles = allArticles.filter(article => {
                 if (search && !article.title.toLowerCase().includes(search)) return false;
-                if (category && !article.categories.includes(category)) return false;
-                if (tag && !article.tags.includes(tag)) return false;
                 return true;
             });
             
@@ -228,8 +200,6 @@
         document.getElementById('filterBtn').addEventListener('click', filterArticles);
         document.getElementById('resetBtn').addEventListener('click', function() {
             document.getElementById('searchInput').value = '';
-            document.getElementById('categoryFilter').value = '';
-            document.getElementById('tagFilter').value = '';
             filteredArticles = [...allArticles];
             updateArticleCount();
             renderArticles();

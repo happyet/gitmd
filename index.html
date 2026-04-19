@@ -13,14 +13,17 @@
 <body>
     <div class="container">
         <nav class="main-nav">
-            <a href="index.html" class="active">写文章</a>
-            <a href="articles.html">文章管理</a>
-            <a href="manage.html">分类标签</a>
-            <a href="config.html">配置</a>
-            <select id="pathSelector" class="path-selector" title="切换目录">
-                <!-- 动态加载 -->
-            </select>
-            <span class="theme-toggle" id="themeToggle" title="切换主题">🌓</span>
+            <div class="nav-links">
+                <a href="index.html" class="active">写文章</a>
+                <a href="articles.html">文章管理</a>
+                <a href="config.html">配置</a>
+            </div>
+            <div class="nav-actions">
+                <select id="pathSelector" class="path-selector" title="切换目录">
+                    <!-- 动态加载 -->
+                </select>
+                <span class="theme-toggle" id="themeToggle" title="切换主题">🌓</span>
+            </div>
         </nav>
         
         <h2>添加文章 <small id="currentPathBadge"></small></h2>
@@ -62,7 +65,7 @@
                     </div>
                     
                     <div class="editor-body">
-                        <textarea id="content" placeholder="在此输入 Markdown 内容...&#10;&#10;支持标准 Markdown 语法，右侧可切换预览"></textarea>
+                        <textarea id="content" placeholder="在此输入 Markdown 内容..."></textarea>
                     </div>
                     
                     <div class="editor-footer">
@@ -104,23 +107,6 @@
                     <div class="form-control">
                         <label for="date">发布日期</label>
                         <input type="datetime-local" id="date">
-                    </div>
-                    
-                    <div class="form-control">
-                        <label>分类</label>
-                        <div class="checkbox-group" id="categoryList">
-                            <!-- 动态加载 -->
-                        </div>
-                    </div>
-                    
-                    <div class="form-control">
-                        <label>标签</label>
-                        <div class="tags-container">
-                            <div class="tags-input-container">
-                                <input type="text" id="tagInput" placeholder="输入标签，回车添加...">
-                            </div>
-                            <div id="selectedTags" class="selected-tags"></div>
-                        </div>
                     </div>
                     
                     <div class="form-control">
