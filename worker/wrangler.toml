@@ -1,28 +1,30 @@
-# Cloudflare Worker 配置文件
-name = "gitmd-api"
+name = "md"
 main = "worker.js"
 compatibility_date = "2024-01-01"
 
-# 账户ID（在Cloudflare Dashboard右侧可以找到）
-# account_id = "your-account-id"
+# 环境变量（敏感信息，请在Cloudflare Dashboard中设置）
+# [vars]
+# GITHUB_TOKEN = "your-github-token"  # 不推荐在这里写，建议在Dashboard设置
 
-# 环境变量（敏感信息，不要提交到Git）
-[vars]
-# GITHUB_TOKEN = "ghp_xxxxxxxxxxxx"  # 在Dashboard中设置，不要写在这里
+# R2存储桶绑定（如果使用R2图片上传）
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "hugolmsim"
 
-# KV命名空间（用于速率限制和日志，可选）
-# [[kv_namespaces]]
-# binding = "RATE_LIMIT_KV"
-# id = "your-kv-namespace-id"
+# 环境变量配置
+# [vars]
+# R2 相关
+# R2_PUBLIC_URL = "https://your-bucket.your-subdomain.r2.dev"
+# R2_BUCKET_NAME = "your-bucket-name"
 
-# [[kv_namespaces]]
-# binding = "LOGS_KV"
-# id = "your-kv-namespace-id"
+# 又拍云相关（如果使用又拍云）
+# UPYUN_BUCKET = "your-bucket"
+# UPYUN_OPERATOR = "operator"
+# UPYUN_PASSWORD = "password"  # 敏感信息，建议使用 wrangler secret put
+# UPYUN_PATH = "images"
+# UPYUN_DOMAIN = "https://cdn.example.com"
 
-# 路由配置
-[[routes]]
-pattern = "gitmd-api.your-domain.com/*"
-zone_name = "your-domain.com"
-
-# 或者使用workers.dev子域名
-# 访问地址：https://gitmd-api.your-subdomain.workers.dev
+# 路由配置（可选）
+# [[routes]]
+# pattern = "md.example.com/*"
+# zone_name = "example.com"

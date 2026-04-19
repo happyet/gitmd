@@ -125,36 +125,49 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     async function uploadPastedImage(file) {
+        await uploadImage(file);
+    }
+    
+    // 图片上传功能
+    async function uploadImage(file) {
         const status = showUploadStatus('正在上传图片...', 'blue');
         
         try {
-            // 获取签名
-            const signRes = await fetch('upyun.php');
-            const signData = await signRes.json();
+            // 检查是否配置了图片上传
+            if (!window.ImageUploader) {
+                throw new Error('图片上传服务未加载');
+            }
             
-            const formData = new FormData();
-            formData.append('file', file, `paste-${Date.now()}.png`);
-            formData.append('policy', signData.policy);
-            formData.append('signature', signData.signature);
+            const uploader = new ImageUploader(GitMDConfig);
+            const imageUrl = await uploader.upload(file);
             
-            const uploadRes = await fetch(`https://v0.api.upyun.com/${signData.bucket}`, {
-                method: 'POST',
-                body: formData
-            });
-            
-            if (!uploadRes.ok) throw new Error('上传失败');
-            
-            const year = new Date().getFullYear();
-            const month = String(new Date().getMonth() + 1).padStart(2, '0');
-            const imageUrl = `${signData.domain}/wp-content/uploads/${year}/${month}/paste-${Date.now()}.png`;
-            
+            // 插入Markdown图片语法
             const sel = getSelection();
-            insertText(`![图片](${imageUrl})`, sel.start, sel.end);
+            const altText = file.name.replace(/\.[^/.]+$/, '') || '图片';
+            insertText(`![${altText}](${imageUrl})`, sel.start, sel.end);
+            
             showUploadStatus('图片上传成功!', 'green');
         } catch (error) {
             showUploadStatus('上传失败: ' + error.message, 'red');
+            console.error('图片上传失败:', error);
         }
     }
+    
+    // 工具栏图片上传按钮
+    const imageUploadBtn = document.querySelector('[data-action="upload-image"]');
+    const imageInput = document.getElementById('image-upload-input');
+    
+    imageUploadBtn?.addEventListener('click', function() {
+        imageInput?.click();
+    });
+    
+    imageInput?.addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            await uploadImage(file);
+            this.value = ''; // 清空input
+        }
+    });
     
     function showUploadStatus(message, color) {
         let el = document.getElementById('upload-status');

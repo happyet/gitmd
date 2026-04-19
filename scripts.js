@@ -40,6 +40,24 @@ document.addEventListener('DOMContentLoaded', async function() {
                 document.getElementById('content').value = article.content;
                 document.getElementById('author').value = article.author || GitMDConfig.defaultAuthor;
                 
+                // 填充URL（如果有）
+                const urlInput = document.getElementById('url');
+                if (urlInput && article.url) {
+                    urlInput.value = article.url;
+                }
+                
+                // 填充分类（如果有）
+                const categoryInput = document.getElementById('category');
+                if (categoryInput && article.categories && article.categories.length > 0) {
+                    categoryInput.value = article.categories.join(', '); // 用逗号分隔
+                }
+                
+                // 填充标签（如果有）
+                const tagsInput = document.getElementById('tags');
+                if (tagsInput && article.tags && article.tags.length > 0) {
+                    tagsInput.value = article.tags.join(', '); // 用逗号分隔
+                }
+                
                 // 格式化日期为 datetime-local 格式
                 const dateInput = document.getElementById('date');
                 if (dateInput && article.date) {
@@ -212,11 +230,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
         
+        // 获取分类（支持逗号分隔）
+        const categoryValue = document.getElementById('category')?.value.trim() || '';
+        const categories = categoryValue ? categoryValue.split(',').map(c => c.trim()).filter(c => c) : [];
+        
+        // 获取标签（支持逗号分隔）
+        const tagsValue = document.getElementById('tags')?.value.trim() || '';
+        const tags = tagsValue ? tagsValue.split(',').map(t => t.trim()).filter(t => t) : [];
+        
         const article = {
             title: title,
             content: content,
             author: document.getElementById('author').value || GitMDConfig.defaultAuthor,
             date: document.getElementById('date').value,
+            url: document.getElementById('url')?.value || '',
+            categories: categories,
+            tags: tags,
             comments: document.getElementById('comments').checked,
             showThumbnail: document.getElementById('showThumbnail').checked
         };

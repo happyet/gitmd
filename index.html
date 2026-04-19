@@ -54,8 +54,10 @@
                                 <li class="divider"></li>
                                 <li><span data-action="link" title="链接 Ctrl+K">Link</span></li>
                                 <li><span data-action="image" title="图片">Img</span></li>
+                                <li><span data-action="upload-image" title="上传图片">📤</span></li>
                             </ul>
                         </div>
+                        <input type="file" id="image-upload-input" accept="image/*" style="display:none">
                         <div class="editor-toolbar-right">
                             <button type="button" id="togglePreview" class="preview-toggle" title="切换预览">
                                 <span class="preview-icon">👁</span>
@@ -101,12 +103,22 @@
                     
                     <div class="form-control">
                         <label for="author">作者</label>
-                        <input type="text" id="author" value="Author">
+                        <input type="text" id="author" value="LMS">
                     </div>
                     
                     <div class="form-control">
                         <label for="date">发布日期</label>
                         <input type="datetime-local" id="date">
+                    </div>
+
+                    <div class="form-control">
+                        <label for="category">分类</label>
+                        <input type="text" id="category" placeholder="输入分类名称，多个分类用逗号分隔">
+                    </div>
+
+                    <div class="form-control">
+                        <label for="tags">标签</label>
+                        <input type="text" id="tags" placeholder="输入标签名称，多个标签用逗号分隔">
                     </div>
                     
                     <div class="form-control">
@@ -129,6 +141,7 @@
     
     <script src="config.js"></script>
     <script src="github-api.js"></script>
+    <script src="image-upload.js"></script>
     <script src="editor.js"></script>
     <script src="scripts.js"></script>
 </body>

@@ -35,7 +35,22 @@ const CONFIG = {
     githubToken: '',
     
     // 默认作者
-    defaultAuthor: 'Author',
+    defaultAuthor: 'LMS',
+    
+    // 图片上传配置
+    imageUpload: {
+        // 上传服务: 'worker' | 'none'
+        // worker: 通过Worker代理上传（推荐，安全）
+        // none: 不使用图片上传
+        provider: 'worker',
+        
+        // 最大文件大小（字节）
+        maxSize: 5 * 1024 * 1024, // 5MB
+        
+        // Worker URL（用于图片上传）
+        // 如果使用Worker代理，填写Worker URL
+        workerUrl: 'https://md.lmsim.workers.dev'  // 如: https://gitmd-worker.xxx.workers.dev
+    },
     
     // 文件命名格式
     fileNameFormat: (title, date) => {

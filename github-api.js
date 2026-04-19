@@ -231,6 +231,7 @@ class GitHubAPI {
             title: '',
             date: new Date().toISOString(),
             author: '',
+            url: '',
             categories: [],
             tags: [],
             content: body,
@@ -260,6 +261,9 @@ class GitHubAPI {
                 case 'author':
                     data.author = value;
                     break;
+                case 'url':
+                    data.url = value;
+                    break;
                 case 'categories':
                     data.categories = value.replace(/^\[|\]$/g, '').split(',').map(s => s.trim().replace(/^['"]|['"]$/g, ''));
                     break;
@@ -280,18 +284,28 @@ class GitHubAPI {
     
     // 生成文章内容
     generateArticleContent(article) {
-        const frontMatter = [
+        const lines = [
             '---',
             `title: '${article.title.replace(/'/g, "\\'")}'`,
             `date: ${article.date}`,
-            `author: '${article.author.replace(/'/g, "\\'")}'`,
-            `categories: [${article.categories.map(c => `'${c}'`).join(', ')}]`,
-            `tags: [${article.tags.map(t => `'${t}'`).join(', ')}]`,
-            `comments: ${article.comments}`,
-            `showThumbnail: ${article.showThumbnail}`,
-            '---'
-        ].join('\n');
+            `author: '${article.author.replace(/'/g, "\\'")}'`
+        ];
         
+        // 添加URL（如果有）
+        if (article.url) {
+            lines.push(`url: '${article.url.replace(/'/g, "\\'")}'`);
+        }
+        
+        // 添加分类和标签
+        lines.push(`categories: [${(article.categories || []).map(c => `'${c}'`).join(', ')}]`);
+        lines.push(`tags: [${(article.tags || []).map(t => `'${t}'`).join(', ')}]`);
+        
+        // 添加其他选项
+        lines.push(`comments: ${article.comments !== false}`);
+        lines.push(`showThumbnail: ${article.showThumbnail !== false}`);
+        lines.push('---');
+        
+        const frontMatter = lines.join('\n');
         return `${frontMatter}\n\n${article.content}`;
     }
 }
