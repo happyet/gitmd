@@ -1,0 +1,28 @@
+# Cloudflare Worker 配置文件
+name = "gitmd-api"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# 账户ID（在Cloudflare Dashboard右侧可以找到）
+# account_id = "your-account-id"
+
+# 环境变量（敏感信息，不要提交到Git）
+[vars]
+# GITHUB_TOKEN = "ghp_xxxxxxxxxxxx"  # 在Dashboard中设置，不要写在这里
+
+# KV命名空间（用于速率限制和日志，可选）
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT_KV"
+# id = "your-kv-namespace-id"
+
+# [[kv_namespaces]]
+# binding = "LOGS_KV"
+# id = "your-kv-namespace-id"
+
+# 路由配置
+[[routes]]
+pattern = "gitmd-api.your-domain.com/*"
+zone_name = "your-domain.com"
+
+# 或者使用workers.dev子域名
+# 访问地址：https://gitmd-api.your-subdomain.workers.dev
