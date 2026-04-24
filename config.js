@@ -24,7 +24,7 @@ const CONFIG = {
     // API代理配置（使用Cloudflare Workers）
     api: {
         // Worker代理URL（部署Worker后填入）
-        proxyUrl: 'https://md.lmsim.workers.dev',
+        proxyUrl: 'https://mdworker.lms.im',
         // 是否使用代理（true=使用Worker，false=直接使用Token）
         useProxy: true
     },
@@ -49,7 +49,7 @@ const CONFIG = {
         
         // Worker URL（用于图片上传）
         // 如果使用Worker代理，填写Worker URL
-        workerUrl: 'https://md.lmsim.workers.dev'  // 如: https://gitmd-worker.xxx.workers.dev
+        workerUrl: 'https://mdworker.lms.im'  // 如: https://gitmd-worker.xxx.workers.dev
     },
     
     // 文件命名格式
